@@ -131,6 +131,37 @@ def test_chunked_boundaries() -> None:
     assert isinstance(decoder.next_event(), Epilogue)
 
 
+def test_chunked_boundary_does_not_emit_separator_as_data() -> None:
+    boundary = b"WZBOUND"
+    body = (
+        b'--WZBOUND\r\nContent-Disposition: form-data; name="a"\r\n\r\n'
+        b'\r\n--WZBOUND--\r\n'
+    )
+    decoder = MultipartDecoder(boundary)
+    data = bytearray()
+
+    for chunk in (body[index : index + 1] for index in range(len(body))):
+        decoder.receive_data(chunk)
+        while True:
+            event = decoder.next_event()
+            if isinstance(event, NeedData):
+                break
+            if isinstance(event, Data):
+                data.extend(event.data)
+
+    decoder.receive_data(None)
+    while True:
+        event = decoder.next_event()
+        if isinstance(event, Data):
+            data.extend(event.data)
+        elif isinstance(event, Epilogue):
+            break
+        elif isinstance(event, NeedData):
+            continue
+
+    assert bytes(data) == b""
+
+
 def test_empty_field() -> None:
     boundary = b"foo"
     decoder = MultipartDecoder(boundary)
