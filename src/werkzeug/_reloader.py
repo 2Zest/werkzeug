@@ -297,7 +297,17 @@ class WatchdogReloaderLoop(ReloaderLoop):
         self.observer = Observer()
         extra_patterns = (p for p in self.extra_files if not os.path.isdir(p))
         self.event_handler = EventHandler(
-            patterns=["*.py", "*.pyc", "*.zip", *extra_patterns],
+            # Keep the single-component patterns for older watchdog releases,
+            # and add recursive patterns for watchdog 7's full-match semantics.
+            patterns=[
+                "*.py",
+                "*.pyc",
+                "*.zip",
+                "**/*.py",
+                "**/*.pyc",
+                "**/*.zip",
+                *extra_patterns,
+            ],
             ignore_patterns=[
                 *[f"*/{d}/*" for d in _ignore_common_dirs],
                 *self.exclude_patterns,

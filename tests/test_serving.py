@@ -149,6 +149,23 @@ def test_watchdog_reloader_ignores_opened(mock_trigger_reload: Mock) -> None:
 
 
 @patch.object(WatchdogReloaderLoop, "trigger_reload")
+def test_watchdog_reloader_matches_nested_python_files(
+    mock_trigger_reload: Mock, tmp_path: Path
+) -> None:
+    pytest.importorskip("watchdog")
+    from watchdog.events import EVENT_TYPE_MODIFIED
+    from watchdog.events import FileModifiedEvent
+
+    reloader = WatchdogReloaderLoop()
+    event = FileModifiedEvent(str(tmp_path / "package" / "app.py"))
+    event.event_type = EVENT_TYPE_MODIFIED
+
+    reloader.event_handler.dispatch(event)
+
+    mock_trigger_reload.assert_called_once()
+
+
+@patch.object(WatchdogReloaderLoop, "trigger_reload")
 def test_watchdog_reloader_ignores_closed_no_write(mock_trigger_reload: Mock) -> None:
     pytest.importorskip("watchdog")
     from watchdog.events import EVENT_TYPE_CLOSED_NO_WRITE
